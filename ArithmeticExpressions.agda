@@ -24,18 +24,19 @@ data _⟶_ : Term → Term → Set where
     t₁ ⟶ t₁′ →
     if t₁ then t₂ else t₃ ⟶ if t₁′ then t₂ else t₃
   E-Succ : ∀ {t₁ t₁′} →
+    t₁ ⟶ t₁′ →
     succ t₁ ⟶ succ t₁′
   E-PredZero :
     pred zero ⟶ zero
-  E-PredSucc : ∀ {nv₁} →
-    pred (succ nv₁) ⟶ nv₁
+  E-PredSucc : ∀ {t₁} →
+    pred (succ t₁) ⟶ t₁
   E-Pred : ∀ {t₁ t₁′} →
     t₁ ⟶ t₁′ → 
     pred t₁ ⟶ pred t₁′
   E-IsZeroZero :
     iszero zero ⟶ true
-  E-IsZeroSucc : ∀ {nv₁} →
-    iszero (succ nv₁) ⟶ false
+  E-IsZeroSucc : ∀ {t₁} →
+    iszero (succ t₁) ⟶ false
   E-IsZero : ∀ {t₁ t₁′} →
     iszero t₁ ⟶ iszero t₁′
 
@@ -49,9 +50,27 @@ data Terminating (t : Term) : Set where
   done : Normal t → Terminating t
   step : ∀ {t′} → t ⟶ t′ → Terminating t′ → Terminating t
 
+normalTrue : Normal true
+normalTrue _ ()
+
+normalFalse : Normal false
+normalFalse _ ()
+
+normalZero : Normal zero
+normalZero _ ()
+
+normalSucc : ∀ {t} → Normal t → Normal (succ t)
+normalSucc n .(succ _) (E-Succ r) = n _ r
+
+terminatesSucc : ∀ {t} → Terminating t → Terminating (succ t)
+terminatesSucc (done n) = done (normalSucc n)
+terminatesSucc (step r p) = step (E-Succ r) (terminatesSucc p)
+
 terminates : ∀ t → Terminating t
-terminates true = done λ _ ()
-terminates false = done λ _ ()
-terminates zero = done λ _ ()
+terminates true = done normalTrue
+terminates false = done normalFalse
+terminates zero = done normalZero
+terminates (succ t) = terminatesSucc (terminates t)
 terminates _ = {!!}
+    
 

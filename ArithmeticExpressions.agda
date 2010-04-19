@@ -1,4 +1,5 @@
 module ArithmeticExpressions where
+open import Data.Empty
 open import Data.Maybe
 open import Data.Bool hiding (if_then_else_)
 open import Relation.Nullary
@@ -33,11 +34,12 @@ data _⟶_ : Term → Term → Set where
   E-Pred : ∀ {t₁ t₁′} →
     t₁ ⟶ t₁′ → 
     pred t₁ ⟶ pred t₁′
-  E-IsZeroZero :
+  E-IszeroZero :
     iszero zero ⟶ true
-  E-IsZeroSucc : ∀ {t₁} →
+  E-IszeroSucc : ∀ {t₁} →
     iszero (succ t₁) ⟶ false
-  E-IsZero : ∀ {t₁ t₁′} →
+  E-Iszero : ∀ {t₁ t₁′} →
+    t₁ ⟶ t₁′ →
     iszero t₁ ⟶ iszero t₁′
 
 Normal : Term → Set
@@ -59,18 +61,48 @@ normalFalse _ ()
 normalZero : Normal zero
 normalZero _ ()
 
-normalSucc : ∀ {t} → Normal t → Normal (succ t)
-normalSucc n .(succ _) (E-Succ r) = n _ r
+module SuccHelpers where
+  normalSucc : ∀ {t} → Normal t → Normal (succ t)
+  normalSucc n .(succ _) (E-Succ r) = n _ r
 
-terminatesSucc : ∀ {t} → Terminating t → Terminating (succ t)
-terminatesSucc (done n) = done (normalSucc n)
-terminatesSucc (step r p) = step (E-Succ r) (terminatesSucc p)
+  terminatesSucc : ∀ {t} → Terminating t → Terminating (succ t)
+  terminatesSucc (done n) = done (normalSucc n)
+  terminatesSucc (step r p) = step (E-Succ r) (terminatesSucc p)
+open SuccHelpers
+
+module IszeroHelpers where
+  normalIszeroTrue : Normal (iszero true)
+  normalIszeroTrue ._ (E-Iszero r) = normalTrue _ r
+
+  normalIszeroFalse : Normal (iszero false)
+  normalIszeroFalse ._ (E-Iszero r) = normalFalse _ r
+
+  normalIszeroPred : ∀ {t} → Normal (pred t) → Normal (iszero (pred t))
+  normalIszeroPred n ._ (E-Iszero r) = n _ r
+
+  normalIszeroIszero : ∀ {t} → Normal (iszero t) → Normal (iszero (iszero t))
+  normalIszeroIszero n ._ (E-Iszero r) = n _ r
+
+  normalIszeroIf : ∀ {t₁ t₂ t₃} → Normal (if t₁ then t₂ else t₃) → Normal (iszero (if t₁ then t₂ else t₃))
+  normalIszeroIf n ._ (E-Iszero r) = n _ r
+
+  terminatesIszero : ∀ {t} → Terminating t → Terminating (iszero t)
+  terminatesIszero {zero} (done _) = step E-IszeroZero (done normalTrue)
+  terminatesIszero {succ _} (done _) = step E-IszeroSucc (done normalFalse)
+  terminatesIszero {true} (done _) = done normalIszeroTrue
+  terminatesIszero {false} (done _) = done normalIszeroFalse
+  terminatesIszero {pred _} (done n) = done (normalIszeroPred n)
+  terminatesIszero {iszero _} (done n) = done (normalIszeroIszero n)
+  terminatesIszero {if _ then _ else _} (done n) = done (normalIszeroIf n)
+  terminatesIszero (step r p) = step (E-Iszero r) (terminatesIszero p)
+open IszeroHelpers
 
 terminates : ∀ t → Terminating t
 terminates true = done normalTrue
 terminates false = done normalFalse
 terminates zero = done normalZero
 terminates (succ t) = terminatesSucc (terminates t)
+terminates (iszero t) = terminatesIszero (terminates t)
 terminates _ = {!!}
     
 

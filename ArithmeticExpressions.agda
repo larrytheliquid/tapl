@@ -45,10 +45,10 @@ data _⟶_ : Rel Term zero where
     t₁ ⟶ t₁′ →
     iszero t₁ ⟶ iszero t₁′
 
-Normal : Term → Set
+Normal : Pred Term zero
 Normal t = ∀ t′ → ¬ t ⟶ t′
 
-Stuck : Term → Set
+Stuck : Pred Term zero
 Stuck t = Normal t → ¬ Value t
 
 data Terminating (t : Term) : Set where

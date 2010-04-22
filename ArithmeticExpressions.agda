@@ -104,5 +104,10 @@ terminates zero = done normalZero
 terminates (succ t) = terminatesSucc (terminates t)
 terminates (iszero t) = terminatesIszero (terminates t)
 terminates _ = {!!}
-    
 
+terminal : ∀ {t} → Terminating t → Term
+terminal {t} (done _ ) = t
+terminal (step _ p) = terminal p
+    
+eval : Term → Term
+eval t = terminal (terminates t)

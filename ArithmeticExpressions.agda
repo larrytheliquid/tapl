@@ -2,7 +2,10 @@ module ArithmeticExpressions where
 open import Data.Empty
 open import Data.Maybe
 open import Data.Bool hiding (if_then_else_)
+open import Level
 open import Relation.Nullary
+open import Relation.Unary
+open import Relation.Binary
 
 data Term : Set where
   true false : Term
@@ -10,13 +13,13 @@ data Term : Set where
   zero : Term
   succ pred iszero : Term → Term
 
-data Value : Term → Set where
+data Value : Pred Term zero where
   true : Value true
   false : Value false
   zero : Value zero
   succ : ∀ {t} → Value t → Value (succ t)
 
-data _⟶_ : Term → Term → Set where
+data _⟶_ : Rel Term zero where
   E-IfTrue : ∀ {t₂ t₃} →
     if true then t₂ else t₃ ⟶ t₂
   E-IfFalse : ∀ {t₂ t₃} →
